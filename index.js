@@ -1,7 +1,7 @@
 const fs = require('fs');
 const readline = require('readline');
 const {google} = require('googleapis');
-// const HTMLParser = require('node-html-parser');
+const cheerio = require('cheerio');
 
 // If modifying these scopes, delete token.json.
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
@@ -17,11 +17,9 @@ const TOKEN_PATH = 'token.json';
 //
 //     authorize(JSON.parse(content), listMajors);
 // });
-const file = '../../../Downloads/Benchmark/reports-beautiful/10tx-100-total-5-orgs/20181116T093853/reports/report20181116T094055-config-private.json.html';
+const file = '../benchmark-reports/reports-beautiful-finished/reports-beautiful/10tx-100-total-5-orgs/20181116T093853/reports/report20181116T094055-config-private.json.html';
 const roundsIds = ['round 1', "round 2", "round 3", "round 4", "round 5"];
-let root = '';
-
-const cheerio = require('cheerio');
+let row = [];
 
 fs.readFile(file, function (error, pgResp) {
     if (error) {
@@ -30,45 +28,21 @@ fs.readFile(file, function (error, pgResp) {
         let bufferOriginal = Buffer.from(JSON.parse(JSON.stringify(pgResp)).data);
         let content = bufferOriginal.toString('utf8');
         const $ = cheerio.load(content);
-
-
-        let roundsElems = $("[id='round 1']");
-        roundsElems.find('table').each(function(i, elem) {
-            console.log(elem);
-        });
-        // console.log(roundsTables);
-
-        // roundsTables.forEach((table) => {
-        //     console.log(table.html());
-        //     // let roundsElems = $("[id='"+id+"']");
-        //     // let roundsTables = roundsElems.find('table');
-        //     // console.log("[id='"+id+"']");
-        //     // console.log(roundsTables.html());
-        // });
         roundsIds.forEach((id) => {
-            // let roundsElems = $("[id='"+id+"']");
-            // let roundsTables = roundsElems.find('table');
-            // console.log("[id='"+id+"']");
-            // console.log(roundsTables.html());
+            row = [];
+            let roundElemsTd = $("[id='"+id+"'] "+"table tr td").each( function(){
+                let value = $(this).text();
+                if (!value.includes("Process") && !value.includes("node local-client.js")){
+                    value = value.replace(' tps','');
+                    value = value.replace(' s','');
+                    value = value.replace('MB','');
+                    row.push(value);
+                }
+            });
+            console.log(row);
         });
-        // let el = root.querySelector('[class="right-column"]');
-        // let elems = root.querySelector("div:not(#benchmarksummary)");
     }
 });
-
-// fs.readFile('complex.html', 'utf8', dataLoaded);
-//
-// function dataLoaded(err, data) {
-//     $ = cheerio.load('' + data + '');
-//     $('#topLevelWrapper > div').each(function(i, elem) {
-//         var id = $(elem).attr('id'),
-//             filename = id + '.html',
-//             content = $.html(elem);
-//         fs.writeFile(filename, content, function(err) {
-//             console.log('Written html to ' + filename);
-//         });
-//     });
-// }
 
 /**
  * Create an OAuth2 client with the given credentials, and then execute the
