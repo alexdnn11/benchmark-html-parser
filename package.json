@@ -1,16 +1,25 @@
 {
   "name": "html-parser",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "dependencies": {
     "cheerio": "^1.0.0-rc.2",
-    "googleapis": "^27.0.0"
+    "googleapis": "^27.0.0",
+    "klaw-sync": "^6.0.0"
   },
   "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexdnn11/benchmark-html-parser.git"
+  },
+  "bugs": {
+    "url": "https://github.com/alexdnn11/benchmark-html-parser/issues"
+  },
+  "homepage": "https://github.com/alexdnn11/benchmark-html-parser#readme",
+  "description": ""
 }
