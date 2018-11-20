@@ -7,7 +7,7 @@ const cheerio = require('cheerio');
 var klawSync = require('klaw-sync');
 
 // If modifying these scopes, delete token.json.
-const SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly'];
+const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 // The file token.json stores the user's access and refresh tokens, and is
 // created automatically when the authorization flow completes for the first
 // time.
@@ -17,6 +17,8 @@ const TOKEN_PATH = 'token.json';
 const spreadsheetId = '1Sa6cGuxxMSzVp397CbpzmNaY0pMwYGfQmkaSqIOBqkw';
 const valueInputOption = null;
 var   rows = []; //all parsed results
+var   dataRange;
+var   dataValues;
 
 var parse = new Promise(function(resolve, reject) {
     // console.log('Doing');
@@ -34,28 +36,16 @@ var parse = new Promise(function(resolve, reject) {
             }
         });
     });
-    resolve(pathList);
+    resolve(rows);
 });
 
 parse.then(function successHandler(result) {
-    console.log(result.length);
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
-        // if (err) return console.log('Error loading client secret file:', err);
-        // var rowCurrent = 1;
-        // rows.push(row);
-        //
-        // let rowStr = '';
-        // row.forEach((cell)=>{
-        //      rowStr += ' ' + cell;
-        // });
-        // console.log(rowStr);
-
         // Authorize a client with credentials, then call the Google Sheets API.
-        // var dataRange  ='Parsed!A'+rowCurrent+':N';
-        // var dataValues =row;
-        // authorize(JSON.parse(content), listMajors);
-        // rowCurrent +=1;
+        dataRange  ='Parsed!A1';
+        dataValues =result;
+        authorize(JSON.parse(content), rowWriteToSpreadsheet);
     });
 }, function failureHandler(error) {
     console.log('Wrong!');
@@ -176,47 +166,37 @@ function listMajors(auth) {
     });
 }
 
-function rowWriteToSpreadsheet(auth, dataRange, dataValues) {
+function rowWriteToSpreadsheet(auth) {
     const sheets = google.sheets({version: 'v4', auth});
 
+    let range = dataRange;
+    let majorDimension='ROWS';
+
+    let values = dataValues;
     const data = [{
-        dataRange,
-        dataValues,
+        range,
+        values,
+        majorDimension,
     }];
     // Additional ranges to update ...
+    let valueInputOption = 'USER_ENTERED';
     const resource = {
         data,
         valueInputOption,
     };
-    // console.log(this);
-    this.sheetsService.spreadsheets.values.batchUpdate({
+
+    sheets.spreadsheets.values.batchUpdate({
         spreadsheetId,
         resource,
-    }, (err, result) => {
+    }, (err, results) => {
         if (err) {
             // Handle error
             console.log(err);
         } else {
-            console.log('%d cells updated.', result.totalUpdatedCells);
+            console.log('Successfull!');
         }
     });
 
-    sheets.spreadsheets.values.get({
-        spreadsheetId: '1Sa6cGuxxMSzVp397CbpzmNaY0pMwYGfQmkaSqIOBqkw',
-        range: 'Parsed!A9:Q',
-    }, (err, res) => {
-        if (err) return console.log('The API returned an error: ' + err);
-        const rowsRead = res.data.values;
-        if (rowsRead.length) {
-            console.log('Name,	Max Latency:');
-            // Print columns A and E, which correspond to indices 0 and 4.
-            rowsRead.map((rowRead) => {
-                console.log(`${rowRead[0]}, ${rowRead[5]}`);
-            });
-        } else {
-            console.log('No data found.');
-        }
-    });
 }
 
 function getDataFromTable(table = ''){
