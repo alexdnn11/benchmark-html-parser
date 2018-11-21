@@ -15,11 +15,22 @@ const TOKEN_PATH = 'token.json';
 
 //Other definition
 const spreadsheetId = '1Sa6cGuxxMSzVp397CbpzmNaY0pMwYGfQmkaSqIOBqkw';
-const valueInputOption = null;
 var   rows = []; //all parsed results
 var   dataRange;
 var   dataValues;
+const measures = [' tps', ' s', 'MB'];
+const signaturesFromPath =[
+    {name : 'config.', DB: 'LevelDB', collection: 'N'},
+    {name : 'config-private.', DB: 'LevelDB', collection: 'Y'},
+    {name : 'config-couch.', DB: 'CouchDB', collection: 'N'},
+    {name : 'config-couch-private.', DB: 'CouchDB', collection: 'Y'},
+];
+const roundsIds = ['round 1', "round 2", "round 3", "round 4", "round 5"];
+// The directory that you want to explore
+var directoryToExplore = "../benchmark-reports/";
 
+
+//Start parsing
 var parse = new Promise(function(resolve, reject) {
     // console.log('Doing');
     //Collect all html-files in array paths[]
@@ -32,7 +43,7 @@ var parse = new Promise(function(resolve, reject) {
                 console.log(error);
             } else {
                 //get one full-row from html-file
-                parseValueFromHtml(pgResp);
+                parseValueFromHtml(pgResp, filePath.path);
             }
         });
     });
@@ -43,7 +54,7 @@ parse.then(function successHandler(result) {
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
         // Authorize a client with credentials, then call the Google Sheets API.
-        dataRange  ='Parsed!A1';
+        dataRange  ='Summary!D12';
         dataValues =result;
         authorize(JSON.parse(content), rowWriteToSpreadsheet);
     });
@@ -51,21 +62,27 @@ parse.then(function successHandler(result) {
     console.log('Wrong!');
 });
 
-function parseValueFromHtml(pgResp) {
-    const roundsIds = ['round 1', "round 2", "round 3", "round 4", "round 5"];
+function parseValueFromHtml(pgResp, filePath) {
     let bufferOriginal = Buffer.from(JSON.parse(JSON.stringify(pgResp)).data);
     let content = bufferOriginal.toString('utf8');
     const $ = cheerio.load(content);
-
+    let row = []; //one full row after parsing
+    // console.log(filePath);
+    signaturesFromPath.forEach((config)=>{
+       if(filePath.include(config.name)){
+           row.push(config.DB);
+           row.push(config.collection);
+       }
+    });
     roundsIds.forEach((id) => {
-        let row = []; //one full row after parsing
+        row =[];
         let roundElemsTd = $("[id='"+id+"'] "+"table tr td").each( function(){
             let value = $(this).text();
             if (!value.includes("Process") && !value.includes("node local-client.js")){
                 //clean measure
-                value = value.replace(' tps','');
-                value = value.replace(' s','');
-                value = value.replace('MB','');
+                measures.forEach((measure)=>{
+                    value = value.replace(measure,'');
+                });
                 row.push(value);
             }
 
@@ -80,9 +97,6 @@ function getListHtmlFiles(){
         const basename = path.basename(item.path);
         return basename.substr(basename.length - 4) !== 'json' &&  basename.substr(basename.length - 3) !== 'log'
     };
-
-// The directory that you want to explore
-    var directoryToExplore = "../benchmark-reports/";
 
     try {
         paths = klawSync(directoryToExplore,{nodir: true, filter: filterFn});
