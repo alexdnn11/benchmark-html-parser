@@ -54,7 +54,7 @@ parse.then(function successHandler(result) {
     // Load client secrets from a local file.
     fs.readFile('credentials.json', (err, content) => {
         // Authorize a client with credentials, then call the Google Sheets API.
-        dataRange  ='Summary!D12';
+        dataRange  ='Summary!A2';
         dataValues =result;
         authorize(JSON.parse(content), rowWriteToSpreadsheet);
     });
@@ -66,27 +66,28 @@ function parseValueFromHtml(pgResp, filePath) {
   let bufferOriginal = Buffer.from(JSON.parse(JSON.stringify(pgResp)).data);
   let content = bufferOriginal.toString('utf8');
   const $ = cheerio.load(content);
-  let row = []; //one full row after parsing
-  let signatures = ['', ''];
 
-  try {
-    row.push(JSON.parse($('pre#benchmarkInfo').text()).clients.number);
-  }catch (e) {
-    row.push('');
-  }
-
-  signaturesFromPath.forEach((config) => {
-    if (filePath.includes(config.name)) {
-      signatures[0] = config.DB;
-      signatures[1] = config.collection;
-    }
-  });
-
-  signatures.forEach((signature) => {
-    row.push(signature);
-  });
 
   roundsIds.forEach((id) => {
+      let row = []; //one full row after parsing
+      let signatures = ['', ''];
+
+      try {
+          row.push(JSON.parse($('pre#benchmarkInfo').text()).clients.number);
+      }catch (e) {
+          row.push('');
+      }
+
+      signaturesFromPath.forEach((config) => {
+          if (filePath.includes(config.name)) {
+              signatures[0] = config.DB;
+              signatures[1] = config.collection;
+          }
+      });
+
+      signatures.forEach((signature) => {
+          row.push(signature);
+      });
     let roundElemsTd = $("[id='" + id + "'] " + "table tr td").each(function () {
       let value = $(this).text();
       if (!value.includes("Process") && !value.includes("node local-client.js")) {
@@ -94,6 +95,7 @@ function parseValueFromHtml(pgResp, filePath) {
         measures.forEach((measure) => {
           value = value.replace(measure, '');
         });
+        value = value.replace('.',',');
         row.push(value);
       }
 
